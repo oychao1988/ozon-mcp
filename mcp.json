@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ozon": {
+      "command": "python",
+      "args": ["-m", "ozon_mcp.server"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
