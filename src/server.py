@@ -8,9 +8,9 @@ from dotenv import load_dotenv
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 
-from . import browser as browser_module
-from . import mail as mail_module
-from . import selectors
+import browser as browser_module
+import mail as mail_module
+import ozon_selectors as selectors
 
 
 # Load environment variables at module level

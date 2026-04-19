@@ -10,7 +10,7 @@ class TestHandleLoginWithEmailCode:
 
     async def test_handle_login_with_email_code_success(self):
         """Test successful login flow."""
-        from ozon_mcp.server import handle_login_with_email_code
+        from server import handle_login_with_email_code
 
         env_vars = {
             "ozon_username": "test@qq.com",
@@ -35,9 +35,9 @@ class TestHandleLoginWithEmailCode:
         mock_mail.disconnect = MagicMock()
 
         with patch.dict("os.environ", env_vars, clear=False), \
-             patch("ozon_mcp.browser.BrowserManager", return_value=mock_browser_manager), \
-             patch("ozon_mcp.mail.QQMailReader", return_value=mock_mail), \
-             patch("ozon_mcp.server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+             patch("browser.BrowserManager", return_value=mock_browser_manager), \
+             patch("mail.QQMailReader", return_value=mock_mail), \
+             patch("server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
 
             result = await handle_login_with_email_code({})
 
@@ -47,7 +47,7 @@ class TestHandleLoginWithEmailCode:
 
     async def test_handle_login_with_email_code_captcha_timeout(self):
         """Test timeout scenario when waiting for email code."""
-        from ozon_mcp.server import handle_login_with_email_code
+        from server import handle_login_with_email_code
 
         env_vars = {
             "ozon_username": "test@qq.com",
@@ -72,9 +72,9 @@ class TestHandleLoginWithEmailCode:
         mock_mail.disconnect = MagicMock()
 
         with patch.dict("os.environ", env_vars, clear=False), \
-             patch("ozon_mcp.browser.BrowserManager", return_value=mock_browser_manager), \
-             patch("ozon_mcp.mail.QQMailReader", return_value=mock_mail), \
-             patch("ozon_mcp.server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+             patch("browser.BrowserManager", return_value=mock_browser_manager), \
+             patch("mail.QQMailReader", return_value=mock_mail), \
+             patch("server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
 
             result = await handle_login_with_email_code({})
 
@@ -84,7 +84,7 @@ class TestHandleLoginWithEmailCode:
 
     async def test_handle_login_with_email_code_missing_env_vars(self):
         """Test handling when environment variables are missing."""
-        from ozon_mcp.server import handle_login_with_email_code
+        from server import handle_login_with_email_code
 
         # Ensure env vars are not set
         with patch.dict("os.environ", {}, clear=True):
@@ -101,7 +101,7 @@ class TestHandleGetMarketingActions:
 
     async def test_handle_get_marketing_actions_success(self):
         """Test successful data extraction."""
-        from ozon_mcp.server import handle_get_marketing_actions
+        from server import handle_get_marketing_actions
 
         mock_page = AsyncMock()
         mock_page.url = "https://seller.ozon.ru/app/prices/control?tab=marketing_actions"
@@ -130,8 +130,8 @@ class TestHandleGetMarketingActions:
         mock_browser_manager.navigate = AsyncMock()
         mock_browser_manager.stop = AsyncMock()
 
-        with patch("ozon_mcp.browser.BrowserManager", return_value=mock_browser_manager), \
-             patch("ozon_mcp.server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("browser.BrowserManager", return_value=mock_browser_manager), \
+             patch("server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
 
             result = await handle_get_marketing_actions({
                 "page": 1,
@@ -146,7 +146,7 @@ class TestHandleGetMarketingActions:
 
     async def test_handle_get_marketing_actions_redirected_to_login(self):
         """Test handling when redirected to login page."""
-        from ozon_mcp.server import handle_get_marketing_actions
+        from server import handle_get_marketing_actions
 
         mock_page = AsyncMock()
         mock_page.url = "https://sso.ozon.ru/auth/ozonid"
@@ -157,8 +157,8 @@ class TestHandleGetMarketingActions:
         mock_browser_manager.navigate = AsyncMock()
         mock_browser_manager.stop = AsyncMock()
 
-        with patch("ozon_mcp.browser.BrowserManager", return_value=mock_browser_manager), \
-             patch("ozon_mcp.server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("browser.BrowserManager", return_value=mock_browser_manager), \
+             patch("server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
 
             result = await handle_get_marketing_actions({})
 
@@ -167,7 +167,7 @@ class TestHandleGetMarketingActions:
 
     async def test_handle_get_marketing_actions_empty_page(self):
         """Test handling empty page with no products."""
-        from ozon_mcp.server import handle_get_marketing_actions
+        from server import handle_get_marketing_actions
 
         mock_page = AsyncMock()
         mock_page.url = "https://seller.ozon.ru/app/prices/control?tab=marketing_actions"
@@ -181,8 +181,8 @@ class TestHandleGetMarketingActions:
         mock_browser_manager.navigate = AsyncMock()
         mock_browser_manager.stop = AsyncMock()
 
-        with patch("ozon_mcp.browser.BrowserManager", return_value=mock_browser_manager), \
-             patch("ozon_mcp.server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        with patch("browser.BrowserManager", return_value=mock_browser_manager), \
+             patch("server.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
 
             result = await handle_get_marketing_actions({
                 "page": 1,
@@ -199,9 +199,9 @@ class TestCallTool:
 
     async def test_call_tool_login_with_email_code(self):
         """Test dispatch to login handler."""
-        from ozon_mcp.server import call_tool
+        from server import call_tool
 
-        with patch("ozon_mcp.server.handle_login_with_email_code", new_callable=AsyncMock) as mock_handler:
+        with patch("server.handle_login_with_email_code", new_callable=AsyncMock) as mock_handler:
             mock_handler.return_value = {"success": True}
             result = await call_tool("login-with-email-code", {})
 
@@ -210,9 +210,9 @@ class TestCallTool:
 
     async def test_call_tool_get_marketing_actions(self):
         """Test dispatch to marketing actions handler."""
-        from ozon_mcp.server import call_tool
+        from server import call_tool
 
-        with patch("ozon_mcp.server.handle_get_marketing_actions", new_callable=AsyncMock) as mock_handler:
+        with patch("server.handle_get_marketing_actions", new_callable=AsyncMock) as mock_handler:
             mock_handler.return_value = {"products": []}
             result = await call_tool("get-marketing-actions", {"page": 1})
 
@@ -221,7 +221,7 @@ class TestCallTool:
 
     async def test_call_tool_unknown_tool(self):
         """Test handling unknown tool."""
-        from ozon_mcp.server import call_tool
+        from server import call_tool
 
         result = await call_tool("unknown-tool", {})
 
@@ -234,7 +234,7 @@ class TestListTools:
 
     def test_list_tools_returns_tools(self):
         """Test that list_tools returns available tools."""
-        from ozon_mcp.server import list_tools
+        from server import list_tools
 
         tools = list_tools()
 
@@ -253,7 +253,7 @@ class TestListTools:
 
     def test_list_tools_login_schema(self):
         """Test login tool has correct schema."""
-        from ozon_mcp.server import list_tools
+        from server import list_tools
 
         tools = list_tools()
         login_tool = next((t for t in tools if t.name == "login-with-email-code"), None)
@@ -263,7 +263,7 @@ class TestListTools:
 
     def test_list_tools_marketing_schema(self):
         """Test marketing actions tool has correct schema."""
-        from ozon_mcp.server import list_tools
+        from server import list_tools
 
         tools = list_tools()
         marketing_tool = next((t for t in tools if t.name == "get-marketing-actions"), None)

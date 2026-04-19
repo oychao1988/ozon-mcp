@@ -9,7 +9,7 @@ class TestBrowserManager:
 
     async def test_browser_manager_init(self):
         """Test BrowserManager initialization."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./chrome-profile", headless=True)
 
@@ -21,7 +21,7 @@ class TestBrowserManager:
 
     async def test_browser_manager_init_defaults(self):
         """Test BrowserManager initialization with defaults."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -30,7 +30,7 @@ class TestBrowserManager:
 
     async def test_browser_context_creation(self):
         """Test browser context creation with mocking."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./chrome-profile", headless=True)
 
@@ -45,7 +45,7 @@ class TestBrowserManager:
         mock_context.pages = [mock_page]
         mock_playwright.start = AsyncMock(return_value=mock_playwright)
 
-        with patch("ozon_mcp.browser.async_playwright", return_value=mock_playwright):
+        with patch("browser.async_playwright", return_value=mock_playwright):
             page = await manager.start()
 
             # Verify start was called on playwright
@@ -75,7 +75,7 @@ class TestBrowserManager:
 
     async def test_start_creates_new_page_if_none_exists(self):
         """Test that start creates new page if context has no pages."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -88,7 +88,7 @@ class TestBrowserManager:
         mock_playwright.chromium.launch_persistent_context = AsyncMock(return_value=mock_context)
         mock_playwright.start = AsyncMock(return_value=mock_playwright)
 
-        with patch("ozon_mcp.browser.async_playwright", return_value=mock_playwright):
+        with patch("browser.async_playwright", return_value=mock_playwright):
             page = await manager.start()
 
             # Verify new_page was called
@@ -97,7 +97,7 @@ class TestBrowserManager:
 
     async def test_stop_closes_browser(self):
         """Test that stop closes browser properly."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -117,7 +117,7 @@ class TestBrowserManager:
 
     async def test_page_property_raises_if_no_page(self):
         """Test that page property raises RuntimeError if page not initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -126,7 +126,7 @@ class TestBrowserManager:
 
     async def test_page_property_returns_page(self):
         """Test that page property returns the page if initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
         mock_page = MagicMock()
@@ -136,7 +136,7 @@ class TestBrowserManager:
 
     async def test_navigate_raises_if_no_page(self):
         """Test that navigate raises RuntimeError if page not initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -145,7 +145,7 @@ class TestBrowserManager:
 
     async def test_navigate_calls_goto(self):
         """Test that navigate calls goto with correct parameters."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
         mock_page = AsyncMock()
@@ -157,7 +157,7 @@ class TestBrowserManager:
 
     async def test_fill_raises_if_no_page(self):
         """Test that fill raises RuntimeError if page not initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -166,7 +166,7 @@ class TestBrowserManager:
 
     async def test_fill_calls_fill(self):
         """Test that fill calls fill on page."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
         mock_page = AsyncMock()
@@ -178,7 +178,7 @@ class TestBrowserManager:
 
     async def test_click_raises_if_no_page(self):
         """Test that click raises RuntimeError if page not initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -187,7 +187,7 @@ class TestBrowserManager:
 
     async def test_click_calls_click(self):
         """Test that click calls click on page."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
         mock_page = AsyncMock()
@@ -199,7 +199,7 @@ class TestBrowserManager:
 
     async def test_wait_for_selector_raises_if_no_page(self):
         """Test that wait_for_selector raises RuntimeError if page not initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -208,7 +208,7 @@ class TestBrowserManager:
 
     async def test_wait_for_selector_calls_wait_for_selector(self):
         """Test that wait_for_selector calls wait_for_selector on page."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
         mock_page = AsyncMock()
@@ -220,7 +220,7 @@ class TestBrowserManager:
 
     async def test_get_text_raises_if_no_page(self):
         """Test that get_text raises RuntimeError if page not initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -229,7 +229,7 @@ class TestBrowserManager:
 
     async def test_get_text_returns_text(self):
         """Test that get_text returns inner_text from page."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
         mock_page = AsyncMock()
@@ -245,7 +245,7 @@ class TestBrowserManager:
 
     async def test_get_input_value_raises_if_no_page(self):
         """Test that get_input_value raises RuntimeError if page not initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -254,7 +254,7 @@ class TestBrowserManager:
 
     async def test_get_input_value_returns_value(self):
         """Test that get_input_value returns input value from page."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
         mock_page = AsyncMock()
@@ -270,7 +270,7 @@ class TestBrowserManager:
 
     async def test_scroll_to_bottom_raises_if_no_page(self):
         """Test that scroll_to_bottom raises RuntimeError if page not initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -279,7 +279,7 @@ class TestBrowserManager:
 
     async def test_scroll_to_bottom_evaluates_script(self):
         """Test that scroll_to_bottom evaluates scroll script."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
         mock_page = AsyncMock()
@@ -291,7 +291,7 @@ class TestBrowserManager:
 
     async def test_wait_for_load_state_raises_if_no_page(self):
         """Test that wait_for_load_state raises RuntimeError if page not initialized."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
 
@@ -300,7 +300,7 @@ class TestBrowserManager:
 
     async def test_wait_for_load_state_calls_wait_for_load_state(self):
         """Test that wait_for_load_state calls wait_for_load_state on page."""
-        from ozon_mcp.browser import BrowserManager
+        from browser import BrowserManager
 
         manager = BrowserManager(profile_path="./profile")
         mock_page = AsyncMock()

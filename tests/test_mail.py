@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch, Mock
 import email
 from email.message import EmailMessage
 
-from ozon_mcp.mail import QQMailReader
+from mail import QQMailReader
 
 
 class TestQQMailReaderInit:
@@ -73,7 +73,7 @@ class TestExtractCode:
 class TestConnect:
     """测试连接功能"""
 
-    @patch("ozon_mcp.mail.imaplib.IMAP4_SSL")
+    @patch("mail.imaplib.IMAP4_SSL")
     def test_connect_success(self, mock_imap_class):
         """测试成功连接到 IMAP 服务器"""
         mock_imap = MagicMock()
@@ -85,7 +85,7 @@ class TestConnect:
         assert result is True
         mock_imap.login.assert_called_once_with("test@qq.com", "auth_code")
 
-    @patch("ozon_mcp.mail.imaplib.IMAP4_SSL")
+    @patch("mail.imaplib.IMAP4_SSL")
     def test_connect_failure(self, mock_imap_class):
         """测试连接失败时的处理"""
         mock_imap_class.side_effect = Exception("Connection refused")
@@ -100,7 +100,7 @@ class TestConnect:
 class TestDisconnect:
     """测试断开连接功能"""
 
-    @patch("ozon_mcp.mail.imaplib.IMAP4_SSL")
+    @patch("mail.imaplib.IMAP4_SSL")
     def test_disconnect_with_active_connection(self, mock_imap_class):
         """测试断开已连接的 IMAP"""
         mock_imap = MagicMock()
@@ -138,9 +138,9 @@ def _make_mock_msg(subject: str, body: str, from_addr: str = "noreply@ozon.ru") 
 class TestWaitForCode:
     """测试等待获取验证码功能"""
 
-    @patch("ozon_mcp.mail.imaplib.IMAP4_SSL")
-    @patch("ozon_mcp.mail.time.sleep")
-    @patch("ozon_mcp.mail.time.time")
+    @patch("mail.imaplib.IMAP4_SSL")
+    @patch("mail.time.sleep")
+    @patch("mail.time.time")
     def test_wait_for_code_timeout(self, mock_time, mock_sleep, mock_imap_class):
         """测试超时场景"""
         mock_imap = MagicMock()
