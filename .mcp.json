@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "ozon": {
+      "command": "python",
+      "args": ["-m", "ozon_mcp.server"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "OZON_USERNAME": "${OZON_USERNAME}",
+        "OZON_LOGIN_URL": "${OZON_LOGIN_URL}",
+        "QQ_IMAP_AUTH_CODE": "${QQ_IMAP_AUTH_CODE}"
+      }
+    }
+  }
+}

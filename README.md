@@ -50,6 +50,7 @@ chrome_profile_path="./chrome-profile/"
 #### 4. 运行 MCP Server
 
 ```bash
+cd src
 python -m ozon_mcp.server
 ```
 
