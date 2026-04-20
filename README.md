@@ -188,7 +188,7 @@ uv publish --repository testpypi
 
 ### 更新日志
 
-#### v0.1.1 (2026-04-20)
+#### v0.1.2 (2026-04-20)
 
 **Bug 修复：**
 - 修复 `__version__` 与 `pyproject.toml` 版本不一致的问题
@@ -207,6 +207,9 @@ uv publish --repository testpypi
 - 新增 `BaseHandler` 基类，集成重试和错误恢复逻辑
 - Selectors 配置迁移到 YAML 文件，支持热重载
 - Server.py 全面采用 `SelectorConfig` 管理选择器
+
+**包修复：**
+- 修复 `pyproject.toml` 缺少 `handlers` 子包和 `selectors.yaml` 数据文件的打包配置
 
 #### v0.1.0 (2026-04-20)
 

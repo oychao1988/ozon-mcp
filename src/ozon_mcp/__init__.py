@@ -1,6 +1,6 @@
 """OZON MCP Server - 浏览器自动化工具"""
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 from .session import SessionManager
 from .handlers.base import BaseHandler, HandlerError, RetryableError, FatalError
