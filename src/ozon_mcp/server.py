@@ -607,3 +607,8 @@ async def main():
 if __name__ == "__main__":
     import asyncio
     asyncio.run(main())
+
+
+def cli_main():
+    """CLI entry point for uv tool install."""
+    asyncio.run(main())

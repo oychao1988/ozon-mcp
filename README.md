@@ -18,6 +18,21 @@ OZON MCP Server 是一个基于 [Model Context Protocol (MCP)](https://modelcont
 
 ### 安装
 
+#### 方式一：使用 uv tool 安装（推荐，用于 Claude Code/Cursor）
+
+```bash
+# 安装 uv (如果没有)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 全局安装 ozon-mcp 包
+uv tool install ozon_mcp
+
+# 安装浏览器
+uv run --tool ozon_mcp playwright install chromium
+```
+
+#### 方式二：克隆源码开发
+
 ```bash
 # 克隆项目
 git clone https://github.com/oychao1988/ozon-mcp.git
@@ -64,7 +79,7 @@ chrome_profile_source="copy_to_local"
 
 ```bash
 # 添加 MCP Server
-claude mcp add ozon --transport stdio -- uvx ozon_mcp.server
+claude mcp add ozon --transport stdio -- uvx ozon_mcp
 ```
 
 或手动编辑 `~/.claude.json`：
@@ -74,91 +89,49 @@ claude mcp add ozon --transport stdio -- uvx ozon_mcp.server
   "mcpServers": {
     "ozon": {
       "command": "uvx",
-      "args": ["--directory", "/path/to/ozon-mcp", "ozon_mcp.server"]
+      "args": ["ozon_mcp"]
     }
   }
 }
 ```
 
-#### 方式二：使用 uv run 运行
+#### 方式二：使用已安装的 ozon-mcp 命令
 
 ```bash
-claude mcp add ozon --transport stdio -- uv run --directory /path/to/ozon-mcp python -m ozon_mcp.server
-```
-
-#### 方式三：使用 npx mcp 安装
-
-```bash
-npx -y @modelcontextprotocol/install ozon -- uvx ozon_mcp.server
-```
-
-#### 方式四：全局安装后运行
-
-```bash
-# 全局安装
-uv tool install ozon_mcp
-
-# 添加到 Claude Code
 claude mcp add ozon --transport stdio -- ozon-mcp
 ```
 
 ### 在 Cursor 中配置
 
-#### 方式一：使用项目配置
-
-在项目根目录创建 `.mcp.json`：
-
-```json
-{
-  "mcpServers": {
-    "ozon": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/ozon-mcp", "python", "-m", "ozon_mcp.server"],
-      "env": {
-        "ozon_username": "your_qq@qq.com",
-        "qq_imap_auth_code": "your_auth_code"
-      }
-    }
-  }
-}
-```
-
-#### 方式二：使用 uvx
+#### 方式一：使用 uvx（推荐）
 
 ```json
 {
   "mcpServers": {
     "ozon": {
       "command": "uvx",
-      "args": ["--directory", "/path/to/ozon-mcp", "ozon_mcp.server"]
+      "args": ["ozon_mcp"]
     }
   }
 }
 ```
 
-#### 方式三：使用全局设置
-
-1. 打开 Cursor 设置 (Cmd+,)
-2. 搜索 "MCP" 或 "Model Context Protocol"
-3. 点击 "Edit MCP Settings (JSON)"
-4. 添加配置：
+#### 方式二：使用已安装的 ozon-mcp 命令
 
 ```json
 {
   "mcpServers": {
     "ozon": {
-      "command": "uv",
-      "args": ["run", "--directory", "/absolute/path/to/ozon-mcp", "python", "-m", "ozon_mcp.server"],
-      "env": {
-        "ozon_username": "your_qq@qq.com",
-        "qq_imap_auth_code": "your_auth_code"
-      }
+      "command": "ozon-mcp"
     }
   }
 }
 ```
 
-> **注意**：如果 MCP 服务器找不到 uvx 或 ozon-mcp，请使用绝对路径。
+#### 配置方式
+
+1. 在项目根目录创建 `.mcp.json`
+2. 或打开 Cursor 设置 (Cmd+,) → 搜索 "MCP" → "Edit MCP Settings (JSON)"
 
 ### 使用方法
 
