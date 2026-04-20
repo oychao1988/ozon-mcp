@@ -26,7 +26,7 @@ class QQMailReader:
     def connect(self) -> bool:
         """连接到 IMAP 服务器"""
         try:
-            self._imap = imaplib.IMAP4_SSL(self.imap_server, self.imap_port)
+            self._imap = imaplib.IMAP4_SSL(self.imap_server, self.imap_port, timeout=30)
             self._imap.login(self.email, self.auth_code)
             return True
         except Exception as e:
