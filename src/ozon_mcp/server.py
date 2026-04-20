@@ -11,6 +11,17 @@ from mcp.types import Tool, TextContent
 from . import browser as browser_module
 from . import mail as mail_module
 from . import ozon_selectors as selectors
+from ._selectors import SelectorConfig
+
+# Selector configuration (loads from selectors.yaml with hot-reload support)
+_selector_config: SelectorConfig | None = None
+
+def get_selectors() -> SelectorConfig:
+    """Get or create the global SelectorConfig instance."""
+    global _selector_config
+    if _selector_config is None:
+        _selector_config = SelectorConfig()
+    return _selector_config
 
 
 # Load environment variables at module level
@@ -272,14 +283,12 @@ async def handle_login_with_email_code(args: Dict[str, Any]) -> Dict[str, Any]:
         await code_input.fill(code)
 
         # Click submit button after filling OTP code
-        otp_submit_selectors = [
+        login_cfg = get_selectors().get_login_selectors()
+        otp_submit_selectors = login_cfg.get("otp_submit_buttons", [
             'button:has-text("Подтвердить")',
             'button:has-text("Войти")',
-            'button:has-text("Подтвердить код")',
-            'button:has-text("Продолжить")',
             'button[type="submit"]',
-            'button:has-text("Верифицировать")',
-        ]
+        ])
         submit_clicked = False
         for submit_sel in otp_submit_selectors:
             try:
@@ -364,8 +373,9 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
         products = []
 
         # Scroll helper — defined once at function level, used by all callers
-        max_scrolls = args.get("max_scrolls", 20)
-        scroll_delay = args.get("scroll_delay", 1.0)
+        scroll_cfg = get_selectors().get_scroll_config()
+        max_scrolls = args.get("max_scrolls", scroll_cfg["max_iterations"])
+        scroll_delay = args.get("scroll_delay", scroll_cfg["delay_seconds"])
 
         async def scroll_to_load():
             scroll_position = 0
