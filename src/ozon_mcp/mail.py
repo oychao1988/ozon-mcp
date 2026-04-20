@@ -4,6 +4,7 @@ import imaplib
 import email
 import re
 import time
+import random
 from typing import Optional, List, Tuple
 
 
@@ -216,6 +217,7 @@ class QQMailReader:
             return None
 
         start_time = time.time()
+        attempt = 0
 
         while time.time() - start_time < timeout:
             try:
@@ -238,7 +240,10 @@ class QQMailReader:
             except Exception as e:
                 print(f"检查邮件时出错: {e}")
 
-            time.sleep(poll_interval)
+            # Exponential backoff: increase interval each attempt, cap at 60s
+            attempt += 1
+            backoff = min(poll_interval * (2 ** attempt) + random.uniform(0, 1), 60)
+            time.sleep(backoff)
 
         return None
 
