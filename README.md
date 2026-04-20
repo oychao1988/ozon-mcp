@@ -88,6 +88,40 @@ claude mcp add ozon --transport stdio -- ozon-mcp
 claude mcp add ozon --transport stdio -- uvx ozon-mcp
 ```
 
+#### 使用 uvx 从 GitHub 直接运行（无需安装）
+
+```bash
+claude mcp add ozon --transport stdio -- uvx github:oychao1988/ozon-mcp
+```
+
+### Claude Code 使用示例
+
+配置完成后，可以在 Claude Code 中直接调用 MCP 工具：
+
+```
+# 登录 OZON 账号
+使用 ozon 工具执行 login-with-email-code 命令
+
+# 获取营销活动价格数据
+使用 ozon 工具执行 get-marketing-actions 命令，参数为 page=1, page_size=20
+```
+
+在 Claude Code 对话中可以这样交互：
+
+```
+# 登录示例
+User: 请帮我登录 OZON 卖家后台
+Claude: [调用 login-with-email-code]
+
+# 获取数据示例
+User: 获取第1页的营销活动商品数据
+Claude: [调用 get-marketing-actions，参数 {page: 1, page_size: 20}]
+
+# 获取所有页面数据
+User: 获取所有营销活动商品的价格数据
+Claude: [调用 get-marketing-actions，参数 {all_pages: true}]
+```
+
 ### 在 Cursor 中配置
 
 在 `.mcp.json` 或 Cursor MCP 设置中添加：
@@ -217,6 +251,33 @@ uv publish --repository testpypi
 1. **隐私保护** - 请勿提交 `.env` 文件或 `chrome-profile/` 目录到 Git
 2. **验证码** - 确保 QQ 邮箱能正常接收 OZON 的验证码邮件
 3. **Chrome Profile** - 首次登录后会保存登录状态，避免重复验证
+
+### Claude Code 管理命令
+
+```bash
+# 查看已配置的 MCP 服务器
+claude mcp list
+
+# 移除 MCP 服务器
+claude mcp remove ozon
+
+# 重新添加（更新版本后）
+claude mcp add ozon --transport stdio -- ozon-mcp
+
+# 检查 MCP 服务器状态
+claude mcp start ozon
+```
+
+### 常见问题
+
+**Q: 登录失败，显示验证码错误**
+A: 确保 QQ 邮箱能收到 OZON 的邮件，检查垃圾邮件文件夹
+
+**Q: 页面加载超时**
+A: 增加网络超时时间，或检查 Chrome Profile 是否正常
+
+**Q: 如何查看详细日志**
+A: 运行 `RUST_LOG=debug claude` 启动 Claude Code 查看 MCP 通信日志
 
 ### 更新日志
 
