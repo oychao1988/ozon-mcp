@@ -152,19 +152,51 @@ claude mcp add ozon --transport stdio -- uvx ozon-mcp
 | page_size | number | 20 | 每页产品数量 |
 | all_pages | boolean | false | 是否获取所有页面数据 |
 
+### 运行测试
+
+```bash
+# 运行所有测试
+uv run pytest tests/ -v
+
+# 运行特定测试文件
+uv run pytest tests/test_server.py -v
+
+# 运行带覆盖率报告的测试
+uv run pytest tests/ -v --cov=ozon_mcp
+
+# 运行特定测试类
+uv run pytest tests/test_handlers.py::TestRetryDecorator -v
+
+# 运行特定测试用例
+uv run pytest tests/test_server.py::TestLoginOTPFlow::test_otp_filled_then_submit_button_clicked -v
+```
+
 ### 项目结构
 
 ```
 ozon-mcp/
 ├── src/ozon_mcp/          # 核心代码
+│   ├── __init__.py        # 版本声明和导出
 │   ├── server.py          # MCP Server 入口
 │   ├── browser.py         # Playwright 浏览器管理
 │   ├── mail.py            # QQ 邮箱 IMAP 操作
-│   └── ozon_selectors.py  # OZON 页面选择器
+│   ├── session.py         # 多账号会话管理
+│   ├── _selectors.py      # YAML 选择器加载器
+│   ├── selectors.yaml     # 选择器配置文件
+│   ├── handlers/          # 工具处理器
+│   │   ├── __init__.py
+│   │   └── base.py        # BaseHandler 基类
+│   └── ozon_selectors.py  # OZON 页面选择器常量
 ├── tests/                 # 测试代码
+│   ├── test_browser.py    # 浏览器管理器测试
+│   ├── test_handlers.py   # 处理器测试
+│   ├── test_mail.py       # 邮箱模块测试
+│   ├── test_selectors.py  # 选择器配置测试
+│   ├── test_server.py     # MCP Server 测试
+│   └── test_session.py    # 会话管理器测试
 ├── .env.example           # 环境变量示例
 ├── pyproject.toml         # 项目配置
-└── mcp.json              # MCP 配置示例
+└── README.md             # 使用说明
 ```
 
 ### 发布到 PyPI
