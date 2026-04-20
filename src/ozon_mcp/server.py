@@ -16,6 +16,9 @@ from . import ozon_selectors as selectors
 # Load environment variables at module level
 load_dotenv()
 
+# OZON login URL (fixed)
+OZON_LOGIN_URL = "https://sso.ozon.ru/auth/ozonid?localization_language_code=zh-Hans&__rr=1&abt_att=1"
+
 # MCP Server instance
 app = Server("ozon")
 
@@ -99,10 +102,9 @@ async def handle_login_with_email_code(args: Dict[str, Any]) -> Dict[str, Any]:
     """Handle login with email code."""
     # Get environment variables
     ozon_username = os.getenv("ozon_username")
-    ozon_login_url = os.getenv("ozon_login_url")
     qq_imap_auth_code = os.getenv("qq_imap_auth_code")
 
-    if not ozon_username or not ozon_login_url or not qq_imap_auth_code:
+    if not ozon_username or not qq_imap_auth_code:
         return {
             "success": False,
             "error": "Missing required environment variables",
@@ -123,7 +125,7 @@ async def handle_login_with_email_code(args: Dict[str, Any]) -> Dict[str, Any]:
         page = await browser_manager.start()
 
         # Navigate to login page
-        await browser_manager.navigate(ozon_login_url)
+        await browser_manager.navigate(OZON_LOGIN_URL)
         await asyncio.sleep(3)
 
         # Check for CAPTCHA page

@@ -16,65 +16,186 @@ OZON MCP Server 是一个基于 [Model Context Protocol (MCP)](https://modelcont
 - **自动登录** (`login-with-email-code`) - 使用 QQ 邮箱验证码自动登录 OZON 卖家后台
 - **价格监控** (`get-marketing-actions`) - 获取营销活动商品价格数据，识别低于最低价格的商品
 
-### 快速开始
-
-#### 1. 安装依赖
+### 安装
 
 ```bash
-pip install -r requirements.txt
-playwright install chromium
+# 克隆项目
+git clone https://github.com/oychao1988/ozon-mcp.git
+cd ozon-mcp
+
+# 安装 uv (如果没有)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 使用 uv 安装依赖
+uv sync
+uv run playwright install chromium
 ```
 
-#### 2. 配置环境变量
+### 配置环境变量
 
 复制 `.env.example` 为 `.env` 并填写：
 
 ```bash
-# OZON 账号配置
+cp .env.example .env
+```
+
+编辑 `.env` 文件：
+
+```bash
+# OZON 账号配置（只需要用户名）
 ozon_username="your_qq@qq.com"
-ozon_login_url="https://sso.ozon.ru/auth/ozonid?localization_language_code=zh-Hans"
 
 # QQ 邮箱授权码（16位）- 获取方式见下方
 qq_imap_auth_code="your_16_digit_auth_code"
 
-# Chrome Profile 路径（可选，默认使用 ./chrome-profile/）
-chrome_profile_path="./chrome-profile/"
+# Chrome Profile 配置（可选）
+chrome_profile_source="copy_to_local"
 ```
 
-#### 3. 获取 QQ 邮箱授权码
+#### 获取 QQ 邮箱授权码
 
 1. 登录 [mail.qq.com](https://mail.qq.com)
 2. 设置 → 账户 → POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV服务
 3. 开启 IMAP/SMTP 服务，获取 16 位授权码
 
-#### 4. 运行 MCP Server
+### 在 Claude Code 中配置
+
+#### 方式一：使用 uvx 运行（推荐）
 
 ```bash
-cd src
-python -m ozon_mcp.server
+# 添加 MCP Server
+claude mcp add ozon --transport stdio -- uvx ozon_mcp.server
 ```
 
-或在 Claude Code 中添加 `mcp.json` 配置。
-
-### 使用方法
-
-#### 命令行参数
+或手动编辑 `~/.claude.json`：
 
 ```json
 {
-  "command": "login-with-email-code",
-  "timeout": 120
+  "mcpServers": {
+    "ozon": {
+      "command": "uvx",
+      "args": ["--directory", "/path/to/ozon-mcp", "ozon_mcp.server"]
+    }
+  }
 }
 ```
+
+#### 方式二：使用 uv run 运行
+
+```bash
+claude mcp add ozon --transport stdio -- uv run --directory /path/to/ozon-mcp python -m ozon_mcp.server
+```
+
+#### 方式三：使用 npx mcp 安装
+
+```bash
+npx -y @modelcontextprotocol/install ozon -- uvx ozon_mcp.server
+```
+
+#### 方式四：全局安装后运行
+
+```bash
+# 全局安装
+uv tool install ozon_mcp
+
+# 添加到 Claude Code
+claude mcp add ozon --transport stdio -- ozon-mcp
+```
+
+### 在 Cursor 中配置
+
+#### 方式一：使用项目配置
+
+在项目根目录创建 `.mcp.json`：
+
+```json
+{
+  "mcpServers": {
+    "ozon": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/ozon-mcp", "python", "-m", "ozon_mcp.server"],
+      "env": {
+        "ozon_username": "your_qq@qq.com",
+        "qq_imap_auth_code": "your_auth_code"
+      }
+    }
+  }
+}
+```
+
+#### 方式二：使用 uvx
+
+```json
+{
+  "mcpServers": {
+    "ozon": {
+      "command": "uvx",
+      "args": ["--directory", "/path/to/ozon-mcp", "ozon_mcp.server"]
+    }
+  }
+}
+```
+
+#### 方式三：使用全局设置
+
+1. 打开 Cursor 设置 (Cmd+,)
+2. 搜索 "MCP" 或 "Model Context Protocol"
+3. 点击 "Edit MCP Settings (JSON)"
+4. 添加配置：
+
+```json
+{
+  "mcpServers": {
+    "ozon": {
+      "command": "uv",
+      "args": ["run", "--directory", "/absolute/path/to/ozon-mcp", "python", "-m", "ozon_mcp.server"],
+      "env": {
+        "ozon_username": "your_qq@qq.com",
+        "qq_imap_auth_code": "your_auth_code"
+      }
+    }
+  }
+}
+```
+
+> **注意**：如果 MCP 服务器找不到 uvx 或 ozon-mcp，请使用绝对路径。
+
+### 使用方法
+
+#### 工具列表
+
+##### 1. login-with-email-code
+
+自动登录 OZON 卖家后台（使用 QQ 邮箱接收验证码）。
+
+```json
+{
+  "command": "login-with-email-code"
+}
+```
+
+##### 2. get-marketing-actions
+
+获取营销活动商品价格数据。
 
 ```json
 {
   "command": "get-marketing-actions",
-  "page": 1,
-  "page_size": 20,
-  "all_pages": false
+  "arguments": {
+    "page": 1,
+    "page_size": 20,
+    "all_pages": false
+  }
 }
 ```
+
+**参数说明：**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| page | number | 1 | 页码（从 1 开始） |
+| page_size | number | 20 | 每页产品数量 |
+| all_pages | boolean | false | 是否获取所有页面数据 |
 
 ### 项目结构
 
@@ -84,21 +205,24 @@ ozon-mcp/
 │   ├── server.py          # MCP Server 入口
 │   ├── browser.py         # Playwright 浏览器管理
 │   ├── mail.py            # QQ 邮箱 IMAP 操作
-│   └── selectors.py       # OZON 页面选择器
+│   └── ozon_selectors.py  # OZON 页面选择器
 ├── tests/                 # 测试代码
-├── requirements.txt       # 依赖
+├── .env.example           # 环境变量示例
 ├── pyproject.toml         # 项目配置
-└── mcp.json               # MCP 配置示例
+└── mcp.json              # MCP 配置示例
 ```
 
 ### 开发
 
 ```bash
-# 运行测试
-pytest tests/ -v
-
 # 安装开发依赖
-pip install -e ".[dev]"
+uv sync --dev
+
+# 运行测试
+uv run pytest tests/ -v
+
+# 手动启动服务器测试
+uv run python -m ozon_mcp.server
 ```
 
 ### 注意事项
@@ -118,16 +242,63 @@ OZON MCP Server is a [Model Context Protocol (MCP)](https://modelcontextprotocol
 - **Auto Login** - Login to OZON using QQ Mail verification codes
 - **Price Monitoring** - Check marketing action prices and identify underpriced items
 
-### Quick Start
+### Installation
 
 ```bash
-pip install -r requirements.txt
-playwright install chromium
+git clone https://github.com/oychao1988/ozon-mcp.git
+cd ozon-mcp
+uv sync
+uv run playwright install chromium
 ```
 
-Copy `.env.example` to `.env` and configure your credentials.
+### Configuration
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+ozon_username="your_qq@qq.com"
+qq_imap_auth_code="your_16_digit_auth_code"
+```
 
 Get QQ Mail auth code from: mail.qq.com → Settings → Account → IMAP/SMTP service
+
+### Claude Code Configuration
+
+```bash
+claude mcp add ozon --transport stdio -- uvx ozon_mcp.server
+```
+
+Or edit `~/.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "ozon": {
+      "command": "uvx",
+      "args": ["--directory", "/path/to/ozon-mcp", "ozon_mcp.server"]
+    }
+  }
+}
+```
+
+### Cursor Configuration
+
+Edit Cursor MCP settings (Cmd+, → search "MCP" → "Edit MCP Settings"):
+
+```json
+{
+  "mcpServers": {
+    "ozon": {
+      "command": "uv",
+      "args": ["run", "--directory", "/path/to/ozon-mcp", "python", "-m", "ozon_mcp.server"],
+      "env": {
+        "ozon_username": "your_qq@qq.com",
+        "qq_imap_auth_code": "your_auth_code"
+      }
+    }
+  }
+}
+```
 
 ### License
 

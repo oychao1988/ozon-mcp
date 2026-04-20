@@ -1,9 +1,12 @@
 {
   "mcpServers": {
     "ozon": {
-      "command": "python",
-      "args": ["-m", "ozon_mcp.server"],
-      "cwd": "${workspaceFolder}"
+      "command": "uv",
+      "args": ["run", "--directory", "${workspaceFolder}", "python", "-m", "ozon_mcp.server"],
+      "env": {
+        "ozon_username": "${env:ozon_username}",
+        "qq_imap_auth_code": "${env:qq_imap_auth_code}"
+      }
     }
   }
 }
