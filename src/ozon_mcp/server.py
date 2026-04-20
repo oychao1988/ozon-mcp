@@ -56,6 +56,16 @@ def list_tools() -> List[Tool]:
                         "description": "是否获取所有页面数据",
                         "default": False,
                     },
+                    "max_scrolls": {
+                        "type": "number",
+                        "description": "滚动加载最大次数",
+                        "default": 20,
+                    },
+                    "scroll_delay": {
+                        "type": "number",
+                        "description": "每次滚动之间的等待时间（秒）",
+                        "default": 1.0,
+                    },
                 },
             },
         ),
@@ -354,15 +364,17 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
         products = []
 
         # Scroll helper — defined once at function level, used by all callers
+        max_scrolls = args.get("max_scrolls", 20)
+        scroll_delay = args.get("scroll_delay", 1.0)
+
         async def scroll_to_load():
             scroll_position = 0
             last_height = await page.evaluate("document.body.scrollHeight")
-            max_scrolls = 20  # Safety limit
 
             for _ in range(max_scrolls):
                 scroll_position += await page.evaluate("window.innerHeight")
                 await page.evaluate(f"window.scrollTo(0, {scroll_position})")
-                await asyncio.sleep(1)
+                await asyncio.sleep(scroll_delay)
 
                 new_height = await page.evaluate("document.body.scrollHeight")
                 if scroll_position >= new_height:
