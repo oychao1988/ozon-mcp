@@ -1,0 +1,67 @@
+# OZON Selectors Configuration
+# OZON 页面选择器配置
+
+login:
+  email_login_button: 'button:has-text("使用邮箱登录")'
+  submit_button: 'button:has-text("登录")'
+  email_inputs:
+    - 'input[autocomplete="email"]'
+    - 'input[type="email"]'
+    - 'input[name="email"]'
+  otp_inputs:
+    - 'input[type="text"]'
+    - 'input[name="code"]'
+    - 'input[name="otp"]'
+    - 'input[placeholder*="验证码"]'
+    - 'input[placeholder*="код"]'
+    - 'input[placeholder*="code"]'
+    - 'input[autocomplete="one-time-code"]'
+  otp_submit_buttons:
+    - 'button:has-text("Подтвердить")'
+    - 'button:has-text("Войти")'
+    - 'button:has-text("Подтвердить код")'
+    - 'button:has-text("Продолжить")'
+    - 'button[type="submit"]'
+    - 'button:has-text("Верифицировать")'
+  new_code_button: 'button:has-text("获取新验证码")'
+  return_home_button: 'button:has-text("返回主页")'
+  error_messages:
+    code_incorrect: 'text="代码不正确"'
+    error_container: '.error-message, .alert-error, [data-testid*="error"]'
+  captcha_titles:
+    - 'доступ ограничен'
+    - 'access denied'
+    - 'antibot'
+    - 'challenge'
+  success_url_patterns:
+    - 'seller.ozon'
+    - 'otp'
+    - 'ozonid'
+
+marketing:
+  row_selectors:
+    primary: 'table tbody tr'
+    fallback: 'tr[class*="product"], tr[class*="item"]'
+  pagination:
+    container: '.pagination, [class*="pagination"], .pager'
+    next_button: '.next, button[class*="next"], a[rel="next"], .pagination__next'
+    page_number: '.current-page, [class*="current"], input[type="number"]'
+  loading:
+    indicators: '.loading, [class*="loading"], .spinner, [class*="skeleton"]'
+  empty_state: '.empty, [class*="empty"], .no-data, .placeholder-empty'
+
+common:
+  modal: '.modal, [data-testid*="modal"], .dialog, .popup, .overlay, [role="dialog"], .modal-window'
+  modal_close: '.modal-close, [data-testid*="close-modal"], .dialog-close, .popup-close, button:has-text("Close"), button:has-text("×"), .close-button'
+  cookie_banner: '.cookie-banner, [data-testid*="cookie"], .cookies-consent, .gdpr-banner, .cookie-notice, .consent-popup'
+  cookie_accept: '.cookie-accept, [data-testid*="accept-cookie"], button:has-text("Accept"), button:has-text("Принять"), button:has-text("同意"), .cookies-ok, .accept-all-cookies'
+
+settings:
+  scroll:
+    max_iterations: 20
+    delay_seconds: 1.0
+  pagination:
+    max_pages: 20
+  timeout:
+    default_seconds: 30
+    long_running_seconds: 120
