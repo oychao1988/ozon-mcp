@@ -2,6 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/ozon-mcp.svg)](https://badge.fury.io/py/ozon-mcp)
 
 [中文](#中文文档) | [English](#english-docs)
 
@@ -18,17 +19,17 @@ OZON MCP Server 是一个基于 [Model Context Protocol (MCP)](https://modelcont
 
 ### 安装
 
-#### 方式一：使用 uv tool 安装（推荐，用于 Claude Code/Cursor）
+#### 方式一：从 PyPI 安装（推荐）
 
 ```bash
 # 安装 uv (如果没有)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 全局安装 ozon-mcp 包
-uv tool install ozon_mcp
+# 全局安装 ozon-mcp
+uv tool install ozon-mcp
 
 # 安装浏览器
-uv run --tool ozon_mcp playwright install chromium
+uv tool run ozon-mcp playwright install chromium
 ```
 
 #### 方式二：克隆源码开发
@@ -41,7 +42,7 @@ cd ozon-mcp
 # 安装 uv (如果没有)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 使用 uv 安装依赖
+# 安装依赖
 uv sync
 uv run playwright install chromium
 ```
@@ -75,48 +76,21 @@ chrome_profile_source="copy_to_local"
 
 ### 在 Claude Code 中配置
 
-#### 方式一：使用 uvx 运行（推荐）
-
-```bash
-# 添加 MCP Server
-claude mcp add ozon --transport stdio -- uvx ozon_mcp
-```
-
-或手动编辑 `~/.claude.json`：
-
-```json
-{
-  "mcpServers": {
-    "ozon": {
-      "command": "uvx",
-      "args": ["ozon_mcp"]
-    }
-  }
-}
-```
-
-#### 方式二：使用已安装的 ozon-mcp 命令
+#### 方式一：使用已安装的 ozon-mcp 命令（推荐）
 
 ```bash
 claude mcp add ozon --transport stdio -- ozon-mcp
 ```
 
-### 在 Cursor 中配置
+#### 方式二：使用 uvx 远程运行
 
-#### 方式一：使用 uvx（推荐）
-
-```json
-{
-  "mcpServers": {
-    "ozon": {
-      "command": "uvx",
-      "args": ["ozon_mcp"]
-    }
-  }
-}
+```bash
+claude mcp add ozon --transport stdio -- uvx ozon-mcp
 ```
 
-#### 方式二：使用已安装的 ozon-mcp 命令
+### 在 Cursor 中配置
+
+在 `.mcp.json` 或 Cursor MCP 设置中添加：
 
 ```json
 {
@@ -128,10 +102,18 @@ claude mcp add ozon --transport stdio -- ozon-mcp
 }
 ```
 
-#### 配置方式
+或使用 uvx：
 
-1. 在项目根目录创建 `.mcp.json`
-2. 或打开 Cursor 设置 (Cmd+,) → 搜索 "MCP" → "Edit MCP Settings (JSON)"
+```json
+{
+  "mcpServers": {
+    "ozon": {
+      "command": "uvx",
+      "args": ["ozon-mcp"]
+    }
+  }
+}
+```
 
 ### 使用方法
 
@@ -185,17 +167,17 @@ ozon-mcp/
 └── mcp.json              # MCP 配置示例
 ```
 
-### 开发
+### 发布到 PyPI
 
 ```bash
-# 安装开发依赖
-uv sync --dev
+# 构建包
+uv build
 
-# 运行测试
-uv run pytest tests/ -v
+# 发布到 PyPI（需要账号）
+uv publish
 
-# 手动启动服务器测试
-uv run python -m ozon_mcp.server
+# 或发布到 TestPyPI 测试
+uv publish --repository testpypi
 ```
 
 ### 注意事项
@@ -218,10 +200,12 @@ OZON MCP Server is a [Model Context Protocol (MCP)](https://modelcontextprotocol
 ### Installation
 
 ```bash
-git clone https://github.com/oychao1988/ozon-mcp.git
-cd ozon-mcp
-uv sync
-uv run playwright install chromium
+# Install via uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv tool install ozon-mcp
+
+# Install browser
+uv tool run ozon-mcp playwright install chromium
 ```
 
 ### Configuration
@@ -238,36 +222,18 @@ Get QQ Mail auth code from: mail.qq.com → Settings → Account → IMAP/SMTP s
 ### Claude Code Configuration
 
 ```bash
-claude mcp add ozon --transport stdio -- uvx ozon_mcp.server
-```
-
-Or edit `~/.claude.json`:
-
-```json
-{
-  "mcpServers": {
-    "ozon": {
-      "command": "uvx",
-      "args": ["--directory", "/path/to/ozon-mcp", "ozon_mcp.server"]
-    }
-  }
-}
+claude mcp add ozon --transport stdio -- ozon-mcp
 ```
 
 ### Cursor Configuration
 
-Edit Cursor MCP settings (Cmd+, → search "MCP" → "Edit MCP Settings"):
+Add to `.mcp.json` or Cursor MCP settings:
 
 ```json
 {
   "mcpServers": {
     "ozon": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/ozon-mcp", "python", "-m", "ozon_mcp.server"],
-      "env": {
-        "ozon_username": "your_qq@qq.com",
-        "qq_imap_auth_code": "your_auth_code"
-      }
+      "command": "ozon-mcp"
     }
   }
 }
