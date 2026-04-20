@@ -13,7 +13,7 @@ def get_chrome_profile_path() -> Optional[str]:
     """Get Chrome profile path from .env or auto-detect.
 
     Returns:
-        Chrome profile path or None if not found
+        Chrome profile path (always returns a valid path)
     """
     # Try to load from .env
     from dotenv import load_dotenv
@@ -26,7 +26,7 @@ def get_chrome_profile_path() -> Optional[str]:
         return env_profile_path
 
     # Try local chrome-profile directory
-    local_profile = "./chrome-profile"
+    local_profile = os.path.abspath("./chrome-profile")
     if os.path.exists(local_profile):
         print(f"Using local Chrome profile: {local_profile}")
         return local_profile
@@ -46,18 +46,19 @@ def get_chrome_profile_path() -> Optional[str]:
                 if os.path.exists(default_profile):
                     # Copy to local directory to avoid profile lock issues
                     import shutil
-                    local_copy = "./chrome-profile"
 
-                    if not os.path.exists(local_copy):
-                        print(f"Copying Chrome profile from {default_profile} to {local_copy}...")
-                        shutil.copytree(default_profile, local_copy)
+                    if not os.path.exists(local_profile):
+                        print(f"Copying Chrome profile from {default_profile} to {local_profile}...")
+                        shutil.copytree(default_profile, local_profile)
                         print(f"Chrome profile copied successfully")
                     else:
-                        print(f"Using existing Chrome profile: {local_copy}")
-                    return os.path.abspath(local_copy)
+                        print(f"Using existing Chrome profile: {local_profile}")
+                    return local_profile
 
-    print("No Chrome profile found, will use clean browser context")
-    return None
+    # No profile found - create a new empty profile directory
+    print(f"No Chrome profile found, creating new profile at {local_profile}")
+    os.makedirs(local_profile, exist_ok=True)
+    return local_profile
 
 
 async def apply_stealth(page: Page):
@@ -151,11 +152,13 @@ class BrowserManager:
         playwright = await async_playwright().start()
         self.browser = playwright
 
-        # Determine if we should use profile
-        use_user_data_dir = self.use_profile and self.profile_path and os.path.exists(self.profile_path)
+        # Ensure profile_path is always valid
+        if not self.profile_path:
+            self.profile_path = get_chrome_profile_path()
 
         launch_options = {
             "headless": self.headless,
+            "user_data_dir": self.profile_path,
             "viewport": {"width": 1920, "height": 1080},
             "args": [
                 "--disable-blink-features=AutomationControlled",
@@ -165,19 +168,13 @@ class BrowserManager:
                 "--disable-dev-shm-usage",
                 "--no-first-run",
                 "--window-size=1920,1080",
+                "--disable-features=IsolateOrigins,site-per-process",
             ],
         }
 
-        if use_user_data_dir:
-            print(f"Launching browser with Chrome profile: {self.profile_path}")
-            launch_options["user_data_dir"] = self.profile_path
-            launch_options["args"].extend([
-                "--disable-features=IsolateOrigins,site-per-process",
-            ])
-        else:
-            print("Launching browser without profile (clean context)")
+        print(f"Launching browser with Chrome profile: {self.profile_path}")
 
-        # Launch browser
+        # Launch browser with persistent context (saves cookies/session)
         self.context = await playwright.chromium.launch_persistent_context(**launch_options)
 
         # Reuse existing page if available, otherwise create new one
@@ -185,10 +182,6 @@ class BrowserManager:
             self._page = self.context.pages[0]
         else:
             self._page = await self.context.new_page()
-
-        # Apply stealth evasions only if not using profile
-        if not use_user_data_dir:
-            await stealth_page(self._page)
 
         return self._page
 
