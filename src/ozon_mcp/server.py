@@ -430,13 +430,76 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
                     continue
             return page_products
 
+        # Helper: scroll to load all lazy content
+        async def scroll_to_load():
+            scroll_position = 0
+            last_height = await page.evaluate("document.body.scrollHeight")
+            max_scrolls = 20
+            
+            for _ in range(max_scrolls):
+                scroll_position += await page.evaluate("window.innerHeight")
+                await page.evaluate(f"window.scrollTo(0, {scroll_position})")
+                await asyncio.sleep(1)
+                
+                new_height = await page.evaluate("document.body.scrollHeight")
+                if scroll_position >= new_height:
+                    break
+                last_height = new_height
+            
+            await page.evaluate("window.scrollTo(0, 0)")
+            await asyncio.sleep(0.5)
+        
+        # Navigate to target page
+        if page_num > 1 or all_pages:
+            current_page = 1
+            target_page = page_num if not all_pages else None
+            
+            while True:
+                if target_page and current_page >= target_page:
+                    break
+                    
+                try:
+                    # Scroll to top before pagination
+                    await page.evaluate("window.scrollTo(0, 0)")
+                    await asyncio.sleep(0.5)
+                    
+                    # Look for next page button
+                    all_buttons = await page.query_selector_all('button')
+                    next_page = current_page + 1
+                    next_btn = None
+                    
+                    for btn in all_buttons:
+                        text = (await btn.inner_text()).strip()
+                        if text.isdigit() and int(text) == next_page:
+                            next_btn = btn
+                            break
+                    
+                    if not next_btn:
+                        print(f"No more pages after page {current_page}")
+                        break
+                    
+                    print(f"Clicking page {next_page}...")
+                    await next_btn.click()
+                    
+                    # Wait for loading
+                    await asyncio.sleep(2)
+                    await page.wait_for_load_state("networkidle", timeout=10000)
+                    await asyncio.sleep(1)
+                    
+                    await scroll_to_load()
+                    current_page += 1
+                    print(f"Navigated to page {current_page}")
+                    
+                except Exception as e:
+                    print(f"Error navigating to page {current_page + 1}: {e}")
+                    break
+        
         # Extract first page
         products = await extract_page_products()
-        print(f"Extracted {len(products)} products from first page")
+        print(f"Extracted {len(products)} products from page {page_num}")
 
         if all_pages:
             page_count = 0
-            current_page = 1
             
             while page_count < 20:  # Max 20 pages
                 try:
@@ -447,7 +510,7 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
                     # Look for page number buttons (1, 2, 3, etc.)
                     all_buttons = await page.query_selector_all('button')
                     
-                    next_page = current_page + 1
+                    next_page = page_num + page_count + 1
                     next_btn = None
                     
                     for btn in all_buttons:
@@ -467,25 +530,6 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
                     await asyncio.sleep(2)
                     await page.wait_for_load_state("networkidle", timeout=10000)
                     await asyncio.sleep(1)
-                    
-                    # Progressive scrolling to load all lazy content
-                    async def scroll_to_load():
-                        scroll_position = 0
-                        last_height = await page.evaluate("document.body.scrollHeight")
-                        max_scrolls = 20
-                        
-                        for _ in range(max_scrolls):
-                            scroll_position += await page.evaluate("window.innerHeight")
-                            await page.evaluate(f"window.scrollTo(0, {scroll_position})")
-                            await asyncio.sleep(1)
-                            
-                            new_height = await page.evaluate("document.body.scrollHeight")
-                            if scroll_position >= new_height:
-                                break
-                            last_height = new_height
-                        
-                        await page.evaluate("window.scrollTo(0, 0)")
-                        await asyncio.sleep(0.5)
                     
                     await scroll_to_load()
                     
@@ -510,9 +554,8 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
                         break
                     
                     products.extend(page_products)
-                    current_page += 1
                     page_count += 1
-                    print(f"Extracted {len(page_products)} products from page {current_page}, total: {len(products)}")
+                    print(f"Extracted {len(page_products)} products from page {next_page}, total: {len(products)}")
                     
                 except Exception as e:
                     print(f"Error during pagination: {e}")
