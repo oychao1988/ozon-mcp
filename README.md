@@ -16,6 +16,7 @@ OZON MCP Server 是一个基于 [Model Context Protocol (MCP)](https://modelcont
 
 - **自动登录** (`login-with-email-code`) - 使用 QQ 邮箱验证码自动登录 OZON 卖家后台
 - **价格监控** (`get-marketing-actions`) - 获取营销活动商品价格数据，识别低于最低价格的商品
+- **CLI 直接调用** - 无需 MCP 协议，可从命令行直接执行单个操作
 
 ### 安装
 
@@ -186,6 +187,50 @@ Claude: [调用 get-marketing-actions，参数 {all_pages: true}]
 | page_size | number | 20 | 每页产品数量 |
 | all_pages | boolean | false | 是否获取所有页面数据 |
 
+### CLI 命令行直接调用
+
+除了通过 MCP 协议在 Claude Code / Cursor 中使用，也可以直接从命令行执行单个操作：
+
+```bash
+# 检查环境配置
+python cli.py check
+
+# 登录 OZON 卖家后台
+python cli.py login
+
+# 获取营销活动数据（第1页，20条，表格输出）
+python cli.py marketing
+
+# 获取第2页，每页50条
+python cli.py marketing --page 2 --page-size 50
+
+# 获取所有页面数据
+python cli.py marketing --all
+
+# 无头模式运行（不显示浏览器界面）
+python cli.py --headless marketing
+
+# JSON 格式输出（适合管道处理）
+python cli.py marketing --json
+python cli.py login --json
+```
+
+**CLI 参数说明：**
+
+| 命令 | 参数 | 说明 |
+|------|------|------|
+| `check` | - | 检查环境配置是否完整 |
+| `login` | `--headless` | 无头模式运行 |
+| `marketing` | `--page N` | 页码（从1开始） |
+| | `--page-size N` | 每页产品数量 |
+| | `--all` | 获取所有页面 |
+| | `--max-scrolls N` | 最大滚动次数 |
+| | `--scroll-delay N` | 滚动延迟（秒） |
+| 通用 | `--headless` | 无头模式 |
+| | `--json` | JSON 格式输出 |
+
+> **说明**: CLI 脚本直接调用 `server.py` 中的 handler 函数，复用了全部浏览器自动化逻辑，只是跳过了 MCP 协议层。
+
 ### 运行测试
 
 ```bash
@@ -211,7 +256,7 @@ uv run pytest tests/test_server.py::TestLoginOTPFlow::test_otp_filled_then_submi
 ozon-mcp/
 ├── src/ozon_mcp/          # 核心代码
 │   ├── __init__.py        # 版本声明和导出
-│   ├── server.py          # MCP Server 入口
+│   ├── server.py          # MCP Server 入口 + 业务逻辑
 │   ├── browser.py         # Playwright 浏览器管理
 │   ├── mail.py            # QQ 邮箱 IMAP 操作
 │   ├── session.py         # 多账号会话管理
@@ -221,6 +266,7 @@ ozon-mcp/
 │   │   ├── __init__.py
 │   │   └── base.py        # BaseHandler 基类
 │   └── ozon_selectors.py  # OZON 页面选择器常量
+├── cli.py                 # CLI 命令行脚本（直接调用 handler）
 ├── tests/                 # 测试代码
 │   ├── test_browser.py    # 浏览器管理器测试
 │   ├── test_handlers.py   # 处理器测试

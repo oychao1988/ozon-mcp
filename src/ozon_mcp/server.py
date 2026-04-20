@@ -165,15 +165,24 @@ async def handle_login_with_email_code(args: Dict[str, Any]) -> Dict[str, Any]:
         # Wait for page to stabilize
         await asyncio.sleep(1)
 
-        # Check if we need to click email login button
-        try:
-            email_btn = await page.wait_for_selector('button:has-text("使用邮箱登录")', timeout=3000)
-            if email_btn:
-                print("Found email login button, clicking...")
-                await email_btn.click()
-                await asyncio.sleep(2)
-        except Exception:
-            pass
+        # Check if we need to click email login button (support both Chinese and Russian)
+        email_btn_selectors = [
+            'button:has-text("使用邮箱登录")',
+            'button:has-text("Войти по почте")',
+            'button:has-text("Войти по электронной почте")',
+            'button:has-text("Email")',
+            'button:has-text("Почта")',
+        ]
+        for email_sel in email_btn_selectors:
+            try:
+                email_btn = await page.wait_for_selector(email_sel, timeout=3000)
+                if email_btn:
+                    print(f"Found email login button: {email_sel}, clicking...")
+                    await email_btn.click()
+                    await asyncio.sleep(2)
+                    break
+            except Exception:
+                continue
 
         # Wait for email input
         email_input = None
@@ -198,8 +207,31 @@ async def handle_login_with_email_code(args: Dict[str, Any]) -> Dict[str, Any]:
         await email_input.fill(ozon_username)
         await asyncio.sleep(0.5)
 
-        # Click login button
-        login_btn = await page.wait_for_selector('button:has-text("登录")', timeout=5000)
+        # Click login/continue button (support Chinese, Russian, and generic submit)
+        login_btn_selectors = [
+            'button:has-text("登录")',
+            'button:has-text("Далее")',
+            'button:has-text("Войти")',
+            'button[type="submit"]',
+        ]
+        login_btn = None
+        for login_sel in login_btn_selectors:
+            try:
+                login_btn = await page.wait_for_selector(login_sel, timeout=3000)
+                if login_btn:
+                    print(f"Found login button: {login_sel}")
+                    break
+            except Exception:
+                continue
+
+        if not login_btn:
+            return {
+                "success": False,
+                "error": "Login button not found on page",
+                "page_title": await page.title(),
+                "current_url": page.url,
+            }
+
         await login_btn.click()
         
         # Wait for OTP page to load
