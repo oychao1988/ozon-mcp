@@ -48,12 +48,11 @@ Repository = "https://github.com/oychao1988/ozon-mcp.git"
 Issues = "https://github.com/oychao1988/ozon-mcp/issues"
 
 [tool.setuptools]
-py-modules = ["__init__", "server", "browser", "mail", "ozon_selectors"]
 package-dir = {"" = "src"}
-packages = ["ozon_mcp"]
+packages = ["ozon_mcp", "ozon_mcp.handlers"]
 
 [tool.setuptools.package-data]
-"*" = ["*.py"]
+"*" = ["*.py", "*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
