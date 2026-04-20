@@ -186,6 +186,36 @@ uv publish --repository testpypi
 2. **验证码** - 确保 QQ 邮箱能正常接收 OZON 的验证码邮件
 3. **Chrome Profile** - 首次登录后会保存登录状态，避免重复验证
 
+### 更新日志
+
+#### v0.1.1 (2026-04-20)
+
+**Bug 修复：**
+- 修复 `__version__` 与 `pyproject.toml` 版本不一致的问题
+- 修复 OTP 验证码填写后未点击提交按钮的问题
+- 删除重复的 `scroll_to_load` 函数定义
+
+**健壮性改进：**
+- 添加 tenacity 依赖用于重试逻辑
+- IMAP 连接添加 30 秒 socket 超时
+- 邮件轮询添加指数退避策略
+- 分页失败时返回已获取的部分数据
+- `scroll_to_load` 支持通过 `max_scrolls` 和 `scroll_delay` 参数配置
+
+**可扩展性改进：**
+- 新增 `SessionManager` 支持多账号管理
+- 新增 `BaseHandler` 基类，集成重试和错误恢复逻辑
+- Selectors 配置迁移到 YAML 文件，支持热重载
+- Server.py 全面采用 `SelectorConfig` 管理选择器
+
+#### v0.1.0 (2026-04-20)
+
+初始版本发布，包含：
+- `login-with-email-code` - QQ 邮箱验证码自动登录
+- `get-marketing-actions` - 营销活动价格数据获取
+- Playwright 浏览器自动化
+- Chrome Profile 会话管理
+
 ---
 
 ## English Docs
