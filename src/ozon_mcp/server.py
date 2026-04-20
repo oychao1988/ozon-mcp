@@ -373,11 +373,195 @@ async def handle_login_with_email_code(args: Dict[str, Any]) -> Dict[str, Any]:
             await browser_manager.stop()
 
 
+async def _scroll_to_load(page, max_scrolls: int, scroll_delay: float):
+    """Scroll page to trigger lazy loading of all content."""
+    # 首先滚动到顶部确保从头开始
+    await page.evaluate("window.scrollTo(0, 0)")
+    await asyncio.sleep(0.3)
+
+    # 更小的步长逐步滚动，确保表格中间的产品也被加载
+    for i in range(max_scrolls * 3):  # 增加滚动次数
+        scroll_position = (i + 1) * 300  # 每次滚动 300px
+        await page.evaluate(f"window.scrollTo(0, {scroll_position})")
+        await asyncio.sleep(scroll_delay * 0.8)  # 稍短的单次延迟，但更多次数
+
+        # 检查是否到底
+        current_height = await page.evaluate("window.scrollY + window.innerHeight")
+        total_height = await page.evaluate("document.body.scrollHeight")
+        if current_height >= total_height:
+            break
+
+    await page.evaluate("window.scrollTo(0, 0)")
+    await asyncio.sleep(0.5)
+
+
+async def _click_page_button(page, target_page: int) -> bool:
+    """Click a page number button. Returns True if clicked, False if not found."""
+    await page.evaluate("window.scrollTo(0, 0)")
+    await asyncio.sleep(0.5)
+    # Try clicking "Next page" button first (most reliable fallback)
+    next_button_selectors = [
+        'button[aria-label*="ледующ"], button[aria-label*="Next"], button[aria-label*="下一页"], button[aria-label*="下一页"]',
+        'button:has-text("›"), button:has-text("→"), button:has-text("»")',
+        'button:has-text("Следующая"), button:has-text("Next page"), button:has-text("下一页"), button:has-text("下一页")',
+    ]
+    for sel in next_button_selectors:
+        try:
+            btn = await page.wait_for_selector(sel, timeout=2000)
+            if btn:
+                await btn.click()
+                # 增加更长的等待时间，确保表格内容完全加载
+                await asyncio.sleep(3)
+                await page.wait_for_load_state("networkidle", timeout=10000)
+                # 额外等待表格行出现
+                try:
+                    await page.wait_for_selector('table tbody tr, tr[class*="product"], tr[class*="item"]', timeout=5000)
+                except Exception:
+                    pass
+                await asyncio.sleep(1)
+                return True
+        except Exception:
+            continue
+    # Then try finding the specific page number button within pagination container
+    all_buttons = await page.query_selector_all('button')
+    for btn in all_buttons:
+        text = (await btn.inner_text()).strip()
+        if text.isdigit() and int(text) == target_page:
+            await btn.click()
+            # 增加更长的等待时间，确保表格内容完全加载
+            await asyncio.sleep(3)
+            await page.wait_for_load_state("networkidle", timeout=10000)
+            # 额外等待表格行出现
+            try:
+                await page.wait_for_selector('table tbody tr, tr[class*="product"], tr[class*="item"]', timeout=5000)
+            except Exception:
+                pass
+            await asyncio.sleep(1)
+            return True
+    return False
+
+
+async def _extract_products_from_page(page, max_scrolls: int, scroll_delay: float, limit: int, min_products: int = None) -> list[dict]:
+    """Extract product data from the current page, up to `limit` products.
+
+    Args:
+        min_products: 期望的最小产品数量，如果设置了会等待直到达到该数量或超时
+    """
+    # 先滚动加载
+    await _scroll_to_load(page, max_scrolls, scroll_delay)
+
+    # 等待表格加载 - 增加等待逻辑确保数据已加载
+    rows = []
+    max_wait_attempts = 10  # 增加重试次数
+    wait_interval = 3  # 每次等待时间增加到 3 秒
+
+    for attempt in range(max_wait_attempts):
+        rows = await page.query_selector_all('table tbody tr')
+        if not rows:
+            rows = await page.query_selector_all('tr[class*="product"], tr[class*="item"]')
+
+        # 如果设置了最小产品数量要求，检查是否满足
+        target_count = min_products if min_products else (limit if limit > 0 else 1)
+        if len(rows) >= target_count:
+            print(f"Loaded {len(rows)} rows (meets target {target_count})")
+            break
+
+        # 最后一次尝试，不再等待
+        if attempt == max_wait_attempts - 1:
+            break
+
+        # 等待后重试
+        print(f"Waiting for products to load... (attempt {attempt + 1}/{max_wait_attempts}, found {len(rows)} rows, target {target_count})")
+        await asyncio.sleep(wait_interval)
+
+        # 再次滚动触发加载 - 模拟真实用户行为，逐步滚动
+        scroll_steps = 3
+        for step in range(scroll_steps):
+            scroll_pos = (step + 1) * (await page.evaluate("window.innerHeight")) * 0.8
+            await page.evaluate(f"window.scrollTo(0, {scroll_pos})")
+            await asyncio.sleep(0.5)
+
+    products = []
+    for row in rows:
+        if len(products) >= limit:
+            break
+
+        try:
+            cells = await row.query_selector_all('td')
+            if len(cells) < 4:
+                continue
+
+            product = {}
+            for i, cell in enumerate(cells):
+                text = (await cell.inner_text()).strip()
+                if not text:
+                    continue
+
+                lines = [l.strip() for l in text.split('\n') if l.strip()]
+
+                # Cell 1: product name + SKU
+                if i == 1:
+                    if lines:
+                        product["name"] = lines[0]
+                        for line in reversed(lines):
+                            if line.replace(' ', '').isdigit():
+                                product["sku"] = line
+                                break
+
+                # Cell 2: SKU (sometimes separate)
+                elif i == 2:
+                    if not product.get("sku") and lines:
+                        for line in lines:
+                            if line.replace(' ', '').isdigit():
+                                product["sku"] = line
+                                break
+
+                # Cell 3: original/discount prices
+                elif i == 3:
+                    for line in lines:
+                        if '¥' in line:
+                            product["original_price"] = line
+                            break
+
+                # Cell 4: your price
+                elif i == 4:
+                    for line in lines:
+                        if '¥' in line:
+                            product["your_price"] = line
+                            break
+
+                # Cell 5: min price
+                elif i == 5:
+                    for line in lines:
+                        if '¥' in line or line == '未指定':
+                            product["min_price"] = line
+                            break
+
+                # Cell 6: price status
+                elif i == 6:
+                    for line in lines:
+                        if any(s in line for s in ['有利', '不利', '中等']):
+                            product["price_status"] = line
+                            break
+
+            if product.get("name") or product.get("sku"):
+                products.append(product)
+
+        except Exception:
+            continue
+
+    return products
+
+
 async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
     """Handle marketing actions data extraction."""
     page_num = args.get("page", 1)
-    page_size = args.get("page_size", 20)
+    page_size = args.get("page_size", 50)
     all_pages = args.get("all_pages", False)
+
+    scroll_cfg = get_selectors().get_scroll_config()
+    max_scrolls = args.get("max_scrolls", scroll_cfg["max_iterations"])
+    scroll_delay = args.get("scroll_delay", scroll_cfg["delay_seconds"])
 
     browser_manager = None
 
@@ -390,10 +574,9 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
         page = await browser_manager.start()
         marketing_url = "https://seller.ozon.ru/app/prices/control?tab=marketing_actions"
         await browser_manager.navigate(marketing_url)
-        
-        # Wait for page to fully load
+
         await page.wait_for_load_state("networkidle")
-        await asyncio.sleep(3)  # Extra wait for dynamic content
+        await asyncio.sleep(3)
 
         # Check if redirected to login
         if "login" in page.url.lower() or "auth" in page.url.lower():
@@ -404,228 +587,62 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
 
         products = []
 
-        # Scroll helper — defined once at function level, used by all callers
-        scroll_cfg = get_selectors().get_scroll_config()
-        max_scrolls = args.get("max_scrolls", scroll_cfg["max_iterations"])
-        scroll_delay = args.get("scroll_delay", scroll_cfg["delay_seconds"])
-
-        async def scroll_to_load():
-            scroll_position = 0
-            last_height = await page.evaluate("document.body.scrollHeight")
-
-            for _ in range(max_scrolls):
-                scroll_position += await page.evaluate("window.innerHeight")
-                await page.evaluate(f"window.scrollTo(0, {scroll_position})")
-                await asyncio.sleep(scroll_delay)
-
-                new_height = await page.evaluate("document.body.scrollHeight")
-                if scroll_position >= new_height:
-                    break
-                last_height = new_height
-
-            await page.evaluate("window.scrollTo(0, 0)")
-            await asyncio.sleep(0.5)
-
-        async def extract_page_products():
-            page_products = []
-
-            # Scroll to load all lazy content
-            await scroll_to_load()
-            
-            # Try to find table rows
-            rows = await page.query_selector_all('table tbody tr')
-            
-            if not rows:
-                rows = await page.query_selector_all('tr[class*="product"], tr[class*="item"]')
-            
-            for row in rows:
-                try:
-                    cells = await row.query_selector_all('td')
-                    
-                    if len(cells) < 4:
-                        continue
-                    
-                    product = {}
-                    
-                    for i, cell in enumerate(cells):
-                        text = (await cell.inner_text()).strip()
-                        if not text:
-                            continue
-                        
-                        lines = [l.strip() for l in text.split('\n') if l.strip()]
-                        
-                        # Cell 0: checkbox (skip)
-                        # Cell 1: product name (contains full name + SKU)
-                        if i == 1:
-                            if lines:
-                                # First line is the name
-                                product["name"] = lines[0]
-                                # Find SKU (last part if it's digits)
-                                for line in reversed(lines):
-                                    if line.replace(' ', '').isdigit():
-                                        product["sku"] = line
-                                        break
-                        
-                        # Cell 2: SKU (sometimes separate)
-                        elif i == 2:
-                            if not product.get("sku") and lines:
-                                for line in lines:
-                                    if line.replace(' ', '').isdigit():
-                                        product["sku"] = line
-                                        break
-                        
-                        # Cell 3: original/discount prices (2 prices)
-                        elif i == 3:
-                            for line in lines:
-                                if '¥' in line:
-                                    product["original_price"] = line
-                                    break
-                        
-                        # Cell 4: your price (current price)
-                        elif i == 4:
-                            for line in lines:
-                                if '¥' in line:
-                                    product["your_price"] = line
-                                    break
-                        
-                        # Cell 5: min price
-                        elif i == 5:
-                            for line in lines:
-                                if '¥' in line or line == '未指定':
-                                    product["min_price"] = line
-                                    break
-                        
-                        # Cell 6: price status (有利/不利/中等)
-                        elif i == 6:
-                            for line in lines:
-                                if any(s in line for s in ['有利', '不利', '中等']):
-                                    product["price_status"] = line
-                                    break
-                    
-                    if product.get("name") or product.get("sku"):
-                        page_products.append(product)
-                        
-                except Exception:
-                    continue
-            return page_products
-
-        # Navigate to target page
-        if page_num > 1 or all_pages:
-            current_page = 1
-            target_page = page_num if not all_pages else None
-            
-            while True:
-                if target_page and current_page >= target_page:
-                    break
-                    
-                try:
-                    # Scroll to top before pagination
-                    await page.evaluate("window.scrollTo(0, 0)")
-                    await asyncio.sleep(0.5)
-                    
-                    # Look for next page button
-                    all_buttons = await page.query_selector_all('button')
-                    next_page = current_page + 1
-                    next_btn = None
-                    
-                    for btn in all_buttons:
-                        text = (await btn.inner_text()).strip()
-                        if text.isdigit() and int(text) == next_page:
-                            next_btn = btn
-                            break
-                    
-                    if not next_btn:
-                        print(f"No more pages after page {current_page}")
-                        break
-                    
-                    print(f"Clicking page {next_page}...")
-                    await next_btn.click()
-                    
-                    # Wait for loading
-                    await asyncio.sleep(2)
-                    await page.wait_for_load_state("networkidle", timeout=10000)
-                    await asyncio.sleep(1)
-                    
-                    await scroll_to_load()
-                    current_page += 1
-                    print(f"Navigated to page {current_page}")
-                    
-                except Exception as e:
-                    print(f"Error navigating to page {current_page + 1}: {e}")
-                    break
-        
-        # Extract first page
-        products = await extract_page_products()
-        print(f"Extracted {len(products)} products from page {page_num}")
-
         if all_pages:
-            page_count = 0
-            
-            while page_count < 20:  # Max 20 pages
-                try:
-                    # Scroll to top before pagination
-                    await page.evaluate("window.scrollTo(0, 0)")
-                    await asyncio.sleep(0.5)
-                    
-                    # Look for page number buttons (1, 2, 3, etc.)
-                    all_buttons = await page.query_selector_all('button')
-                    
-                    next_page = page_num + page_count + 1
-                    next_btn = None
-                    
-                    for btn in all_buttons:
-                        text = (await btn.inner_text()).strip()
-                        if text.isdigit() and int(text) == next_page:
-                            next_btn = btn
-                            break
-                    
-                    if not next_btn:
-                        print("No more pages found")
-                        break
-                    
-                    print(f"Clicking page {next_page}...")
-                    await next_btn.click()
-                    
-                    # Wait for loading indicator to disappear and content to load
-                    await asyncio.sleep(2)
-                    await page.wait_for_load_state("networkidle", timeout=10000)
-                    await asyncio.sleep(1)
-                    
-                    await scroll_to_load()
-                    
-                    page_products = await extract_page_products()
-                    
-                    # Retry logic: if not enough products, scroll again
-                    max_retries = 3
-                    retry_count = 0
-                    while len(page_products) < page_size and retry_count < max_retries:
-                        retry_count += 1
-                        print(f"  Only got {len(page_products)} products, retrying ({retry_count}/{max_retries})...")
-                        
-                        # Scroll back to top and try scrolling again
-                        await page.evaluate("window.scrollTo(0, 0)")
-                        await asyncio.sleep(0.5)
-                        await scroll_to_load()
-                        
-                        page_products = await extract_page_products()
-                    
-                    if not page_products:
-                        print("No products on this page, stopping...")
-                        break
-                    
-                    products.extend(page_products)
-                    page_count += 1
-                    print(f"Extracted {len(page_products)} products from page {next_page}, total: {len(products)}")
-                    
-                except Exception as e:
-                    print(f"Error during pagination: {e}")
-                    import traceback
-                    traceback.print_exc()
+            # Navigate to starting page first
+            if page_num > 1:
+                found = await _click_page_button(page, page_num)
+                if not found:
+                    return {
+                        "success": False,
+                        "error": f"Page {page_num} not found",
+                        "products": [],
+                    }
+
+            # Extract all pages starting from page_num
+            current_page = page_num
+            while True:
+
+                page_products = await _extract_products_from_page(
+                    page, max_scrolls, scroll_delay, page_size, min_products=page_size
+                )
+
+                if not page_products:
+                    print(f"No products on page {current_page}, stopping.")
                     break
+
+                # 检查是否部分加载
+                partial_warning = ""
+                if len(page_products) < page_size:
+                    partial_warning = f" (部分加载: {len(page_products)}/{page_size})"
+
+                products.extend(page_products)
+                print(f"Page {current_page}: {len(page_products)} products, total: {len(products)}{partial_warning}")
+                current_page += 1
+                found = await _click_page_button(page, current_page)
+                if not found:
+                    print(f"No page {current_page} button found, stopping.")
+                    break
+
+        else:
+            # Single page: navigate to target page if needed
+            if page_num > 1:
+                print(f"Navigating to page {page_num}...")
+                found = await _click_page_button(page, page_num)
+                if not found:
+                    return {
+                        "success": False,
+                        "error": f"Page {page_num} not found",
+                        "products": [],
+                    }
+
+            products = await _extract_products_from_page(
+                page, max_scrolls, scroll_delay, page_size
+            )
+            print(f"Extracted {len(products)} products from page {page_num}")
 
         return {
             "success": True,
-            "products": products[:page_size] if not all_pages else products,
+            "products": products,
             "total": len(products),
             "page": page_num,
             "page_size": page_size,
