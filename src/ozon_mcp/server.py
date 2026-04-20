@@ -260,6 +260,32 @@ async def handle_login_with_email_code(args: Dict[str, Any]) -> Dict[str, Any]:
 
         # Fill in the code
         await code_input.fill(code)
+
+        # Click submit button after filling OTP code
+        otp_submit_selectors = [
+            'button:has-text("Подтвердить")',
+            'button:has-text("Войти")',
+            'button:has-text("Подтвердить код")',
+            'button:has-text("Продолжить")',
+            'button[type="submit"]',
+            'button:has-text("Верифицировать")',
+        ]
+        submit_clicked = False
+        for submit_sel in otp_submit_selectors:
+            try:
+                await page.wait_for_selector(submit_sel, timeout=3000)
+                await page.click(submit_sel)
+                submit_clicked = True
+                print(f"Clicked OTP submit button: {submit_sel}")
+                break
+            except Exception:
+                continue
+
+        if not submit_clicked:
+            # Fallback: press Enter on the focused input
+            await page.press("input", "Enter")
+            print("No explicit OTP submit button found, pressed Enter as fallback")
+
         await asyncio.sleep(3)
 
         # Check result
