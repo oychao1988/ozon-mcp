@@ -353,31 +353,28 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
 
         products = []
 
+        # Scroll helper — defined once at function level, used by all callers
+        async def scroll_to_load():
+            scroll_position = 0
+            last_height = await page.evaluate("document.body.scrollHeight")
+            max_scrolls = 20  # Safety limit
+
+            for _ in range(max_scrolls):
+                scroll_position += await page.evaluate("window.innerHeight")
+                await page.evaluate(f"window.scrollTo(0, {scroll_position})")
+                await asyncio.sleep(1)
+
+                new_height = await page.evaluate("document.body.scrollHeight")
+                if scroll_position >= new_height:
+                    break
+                last_height = new_height
+
+            await page.evaluate("window.scrollTo(0, 0)")
+            await asyncio.sleep(0.5)
+
         async def extract_page_products():
             page_products = []
-            
-            # Progressive scrolling - scroll one screen at a time, waiting for lazy loading
-            async def scroll_to_load():
-                scroll_position = 0
-                last_height = await page.evaluate("document.body.scrollHeight")
-                max_scrolls = 20  # Safety limit
-                
-                for _ in range(max_scrolls):
-                    # Scroll down by one viewport height
-                    scroll_position += await page.evaluate("window.innerHeight")
-                    await page.evaluate(f"window.scrollTo(0, {scroll_position})")
-                    await asyncio.sleep(1)  # Wait for lazy loading
-                    
-                    # Check if we've reached the bottom or no more content loading
-                    new_height = await page.evaluate("document.body.scrollHeight")
-                    if scroll_position >= new_height:
-                        break
-                    last_height = new_height
-                
-                # Scroll back to top
-                await page.evaluate("window.scrollTo(0, 0)")
-                await asyncio.sleep(0.5)
-            
+
             # Scroll to load all lazy content
             await scroll_to_load()
             
@@ -458,25 +455,6 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
                     continue
             return page_products
 
-        # Helper: scroll to load all lazy content
-        async def scroll_to_load():
-            scroll_position = 0
-            last_height = await page.evaluate("document.body.scrollHeight")
-            max_scrolls = 20
-            
-            for _ in range(max_scrolls):
-                scroll_position += await page.evaluate("window.innerHeight")
-                await page.evaluate(f"window.scrollTo(0, {scroll_position})")
-                await asyncio.sleep(1)
-                
-                new_height = await page.evaluate("document.body.scrollHeight")
-                if scroll_position >= new_height:
-                    break
-                last_height = new_height
-            
-            await page.evaluate("window.scrollTo(0, 0)")
-            await asyncio.sleep(0.5)
-        
         # Navigate to target page
         if page_num > 1 or all_pages:
             current_page = 1
