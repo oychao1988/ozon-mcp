@@ -117,7 +117,7 @@ async def cmd_login(args):
     if args.headless:
         print("(无头模式)")
 
-    result = await handle_login_with_email_code({})
+    result = await handle_login_with_email_code({"headless": args.headless})
 
     print()
     if result.get("success"):
@@ -147,6 +147,7 @@ async def cmd_marketing(args):
         "max_scrolls": args.max_scrolls,
         "scroll_delay": args.scroll_delay,
         "output": args.output,
+        "headless": args.headless,
     }
 
     if args.all:

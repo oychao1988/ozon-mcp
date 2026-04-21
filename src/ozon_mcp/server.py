@@ -133,12 +133,13 @@ async def handle_login_with_email_code(args: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     browser_manager = None
+    headless = args.get("headless", False)
 
     try:
         # Initialize browser manager - use Chrome profile if available
         browser_manager = browser_module.BrowserManager(
             profile_path="./chrome-profile",
-            headless=False,
+            headless=headless,
             use_profile=True,
             auto_detect_profile=True,
         )
@@ -559,6 +560,7 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
     page_num = args.get("page", 1)
     page_size = args.get("page_size", 50)
     all_pages = args.get("all_pages", False)
+    headless = args.get("headless", False)
 
     scroll_cfg = get_selectors().get_scroll_config()
     max_scrolls = args.get("max_scrolls", scroll_cfg["max_iterations"])
@@ -569,7 +571,7 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
     try:
         browser_manager = browser_module.BrowserManager(
             profile_path="./chrome-profile",
-            headless=False,
+            headless=headless,
         )
 
         page = await browser_manager.start()
