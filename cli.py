@@ -146,6 +146,7 @@ async def cmd_marketing(args):
         "all_pages": args.all,
         "max_scrolls": args.max_scrolls,
         "scroll_delay": args.scroll_delay,
+        "output": args.output,
     }
 
     if args.all:
@@ -153,22 +154,32 @@ async def cmd_marketing(args):
     else:
         print(f"模式: 第 {args.page} 页，每页 {args.page_size} 条")
 
+    if args.output:
+        print(f"输出文件: {args.output}")
+
     print("正在启动浏览器并导航到营销活动页面...")
 
     result = await handle_get_marketing_actions(call_args)
 
     print()
     if result.get("success"):
-        products = result.get("products", [])
-        print(f"成功获取 {len(products)} 个产品")
-        print()
-
-        if args.json:
-            print_json(result)
+        if result.get("data_saved"):
+            # 数据已保存到文件
+            print(f"✓ 数据已保存到: {result.get('file')}")
+            print(f"格式: {result.get('format')}")
+            print(f"共 {result.get('total_products')} 个产品")
         else:
-            print_table(products)
+            # 直接输出到控制台
+            products = result.get("products", [])
+            print(f"成功获取 {len(products)} 个产品")
             print()
-            print(f"共 {result.get('total', len(products))} 条数据")
+
+            if args.json:
+                print_json(result)
+            else:
+                print_table(products[:10])
+                print()
+                print(f"共 {result.get('total', len(products))} 条数据")
     else:
         print(f"获取失败: {result.get('error')}")
         if args.json:
@@ -232,10 +243,11 @@ def main():
     # marketing 命令
     marketing_parser = subparsers.add_parser("marketing", help="获取营销活动数据")
     marketing_parser.add_argument("--page", type=int, default=1, help="页码（从1开始）")
-    marketing_parser.add_argument("--page-size", type=int, default=20, help="每页产品数量")
+    marketing_parser.add_argument("--page-size", type=int, default=50, help="每页产品数量")
     marketing_parser.add_argument("--all", action="store_true", help="获取所有页面")
     marketing_parser.add_argument("--max-scrolls", type=int, default=20, help="最大滚动次数")
-    marketing_parser.add_argument("--scroll-delay", type=float, default=1.0, help="滚动延迟（秒）")
+    marketing_parser.add_argument("--scroll-delay", type=float, default=3.0, help="滚动延迟（秒）")
+    marketing_parser.add_argument("--output", type=str, default=None, help="输出文件路径（csv 或 json 格式）")
 
     # check 命令
     subparsers.add_parser("check", help="检查环境配置")
@@ -248,11 +260,11 @@ def main():
 
     # 执行对应的命令
     if args.command == "login":
-        result = asyncio.run(cmd_login(args))
+        _ = asyncio.run(cmd_login(args))
     elif args.command == "marketing":
-        result = asyncio.run(cmd_marketing(args))
+        _ = asyncio.run(cmd_marketing(args))
     elif args.command == "check":
-        result = asyncio.run(cmd_check(args))
+        _ = asyncio.run(cmd_check(args))
     else:
         parser.print_help()
         sys.exit(1)

@@ -198,14 +198,17 @@ python cli.py check
 # 登录 OZON 卖家后台
 python cli.py login
 
-# 获取营销活动数据（第1页，20条，表格输出）
+# 获取营销活动数据（第1页，50条，表格输出）
 python cli.py marketing
 
-# 获取第2页，每页50条
-python cli.py marketing --page 2 --page-size 50
+# 获取第2页，每页100条
+python cli.py marketing --page 2 --page-size 100
 
-# 获取所有页面数据
-python cli.py marketing --all
+# 获取所有页面数据并保存到文件
+python cli.py marketing --all --output products.json
+
+# 保存为 CSV 格式
+python cli.py marketing --page-size 100 --output data/products.csv
 
 # 无头模式运行（不显示浏览器界面）
 python cli.py --headless marketing
@@ -222,10 +225,11 @@ python cli.py login --json
 | `check` | - | 检查环境配置是否完整 |
 | `login` | `--headless` | 无头模式运行 |
 | `marketing` | `--page N` | 页码（从1开始） |
-| | `--page-size N` | 每页产品数量 |
+| | `--page-size N` | 每页产品数量（默认50） |
 | | `--all` | 获取所有页面 |
 | | `--max-scrolls N` | 最大滚动次数 |
-| | `--scroll-delay N` | 滚动延迟（秒） |
+| | `--scroll-delay N` | 滚动延迟（秒，默认3秒） |
+| | `--output PATH` | 输出文件路径（csv 或 json 格式） |
 | 通用 | `--headless` | 无头模式 |
 | | `--json` | JSON 格式输出 |
 

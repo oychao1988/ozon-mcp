@@ -11,6 +11,7 @@ from mcp.types import Tool, TextContent
 from . import browser as browser_module
 from . import mail as mail_module
 from . import ozon_selectors as selectors
+from . import data_exporter
 from ._selectors import SelectorConfig
 
 # Selector configuration (loads from selectors.yaml with hot-reload support)
@@ -639,6 +640,26 @@ async def handle_get_marketing_actions(args: Dict[str, Any]) -> Dict[str, Any]:
                 page, max_scrolls, scroll_delay, page_size
             )
             print(f"Extracted {len(products)} products from page {page_num}")
+
+        # 检查是否需要保存到文件
+        output_path = args.get("output")
+        if output_path:
+            result = data_exporter.save_products(products, output_path)
+            if result["success"]:
+                return {
+                    "success": True,
+                    "data_saved": True,
+                    "file": result["file"],
+                    "format": result["format"],
+                    "total_products": len(products),
+                    "note": f"数据已保存到文件: {result['file']}",
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": result.get("error", "保存失败"),
+                    "products": products[:10],  # 返回前10个作为备用
+                }
 
         return {
             "success": True,
