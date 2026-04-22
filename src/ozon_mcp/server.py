@@ -518,18 +518,18 @@ async def _extract_products_from_page(page, max_scrolls: int, scroll_delay: floa
                                 product["sku"] = line
                                 break
 
-                # Cell 3: original/discount prices
+                # Cell 3: your price
                 elif i == 3:
                     for line in lines:
                         if '¥' in line:
-                            product["original_price"] = line
+                            product["your_price"] = line
                             break
 
-                # Cell 4: your price
+                # Cell 4: price for buyers
                 elif i == 4:
                     for line in lines:
                         if '¥' in line:
-                            product["your_price"] = line
+                            product["buyer_price"] = line
                             break
 
                 # Cell 5: min price

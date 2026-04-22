@@ -8,3 +8,5 @@ __pycache__/
 output/
 *.egg-info/
 src/*.egg-info/
+*.json
+.DS_Store
